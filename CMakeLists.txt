@@ -40,6 +40,7 @@ add_executable(wallreminder
         src/main.cpp
         src/core/controller.cpp
         src/drivers/buzzer.cpp
+        src/drivers/pir.cpp
 )
 
 pico_set_program_name(wallreminder "wallreminder")
