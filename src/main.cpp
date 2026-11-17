@@ -7,6 +7,8 @@
 // ----- The current pins we have to move to config.h later for clean code
 constexpr uint PIR_PIN = 15;   // GP15 = physical pin 20
 constexpr uint BUZZER_PIN = 14; // GP14 = physical pin 19
+constexpr uint SNOOZE_PIN = 16; // GP?? = physical pin _
+constexpr uint DONE_PIN = 17; // GP?? = physical pin _ 
 constexpr uint BUZZER_FREQ_HZ = 2700; // most piezos are loudest around 2-4 kHz
 
 Controller ctrl; //this creates the controller object (main state machine)
@@ -81,6 +83,8 @@ int main() {
     gpio_set_dir(BUZZER_PIN, GPIO_OUT); //sets pin as output
     gpio_put(BUZZER_PIN, 1); //turns off buzzer
     buzzerInit(BUZZER_PIN, BUZZER_FREQ_HZ);
+    buttonInit(SNOOZE_PIN); // initialize the snooze button
+    buttonInit(DONE_PIN); // initialize the done button  
     
     sleep_ms(2000);
     applyOutputs(ctrl.eventOccur(Event::tick, nowMs())); //starts fsm
@@ -90,7 +94,9 @@ int main() {
         // this is just because we dont have any reminder system yet, so its for simulation
         int c = getchar_timeout_us(0);
         if (c == 'r') handle(Event::reminderDue);
-        else if (c == 'd') handle(Event::done);
+        else if (buttonPressed(DONE_PIN)) handle(Event::done);
+        else if (buttonPressed(SNOOZE_PIN)) handle(Event::snooze);
+        
 
         // Real input from the PIR
         if (motionFlag) {

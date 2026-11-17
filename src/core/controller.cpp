@@ -22,11 +22,21 @@ Output Controller::eventOccur(Event event, unsigned int time) {
             if (event == Event::done) {
                 currentState = State::idle;
             }
+            else if (event == Event::snooze) {
+                currentState = State::snoozed;
+                snoozeStart = time;
+            }
+            else if (event == Event::tick && time - alarmStart >= ALARM_TIMEOUT_MS) {
+                currentState = State::armed;
+            }
             // TODO: snooze
             break;
 
         case State::snoozed:
-            // TODO: tick + 10 min elapsed -> alerting
+            if(event == Event::tick && time - snoozeStart >= SNOOZE_MS) {
+                currentState = State::alerting;
+                alarmState = time;
+            }
             break;
     }
 
