@@ -3,23 +3,14 @@
 #include "pico/cyw43_arch.h"
 #include "core/controller.h"
 #include "drivers/buzzer.h"
+#include "drivers/pir.h"
 
 // ----- The current pins we have to move to config.h later for clean code
-constexpr uint PIR_PIN = 15;   // GP15 = physical pin 20
 constexpr uint BUZZER_PIN = 14; // GP14 = physical pin 19
 constexpr uint BUZZER_FREQ_HZ = 2700; // most piezos are loudest around 2-4 kHz
+constexpr uint PIR_PIN = 15;   // GP15 = physical pin 20
 
 Controller ctrl; //this creates the controller object (main state machine)
-volatile bool motionFlag = false; // CLAUDE said that volatile is good for interrupts
-
-
-//Everytime motion is detected, the gpioCallback function is called. It sets the motionFlag to true, which is then checked in the main loop to handle the motion event.
-void gpioCallback(uint gpio, uint32_t events) {
-    if (gpio == PIR_PIN && (events & GPIO_IRQ_EDGE_RISE)) {
-        motionFlag = true;
-    }
-}
-
 
 // --------- helper functions BELOW
 
@@ -59,6 +50,7 @@ void handle(Event e) {
         printf("%s -> %s  [alarm=%d text=%d img=%d]\n",
                stateName(before), stateName(ctrl.getCurrentState()),
                out.alarmOn, out.displayTxt, out.displayImg);
+               buzzerSet(out.alarmOn); //turns on buzzer when alarm is on
     }
 }
 
@@ -74,12 +66,7 @@ int main() {
         return 1;
     }
     //pins
-    gpio_init(PIR_PIN); //sets pin
-    gpio_set_dir(PIR_PIN, GPIO_IN); //sets pin as input
-    gpio_set_irq_enabled_with_callback(PIR_PIN, GPIO_IRQ_EDGE_RISE, true, &gpioCallback); //enables interrupt on rising edge and sets the callback function
-    gpio_init(BUZZER_PIN); //sets pin
-    gpio_set_dir(BUZZER_PIN, GPIO_OUT); //sets pin as output
-    gpio_put(BUZZER_PIN, 1); //turns off buzzer
+    pirInit(PIR_PIN);
     buzzerInit(BUZZER_PIN, BUZZER_FREQ_HZ);
     
     sleep_ms(2000);
@@ -93,12 +80,15 @@ int main() {
         else if (c == 'd') handle(Event::done);
 
         // Real input from the PIR
-        if (motionFlag) {
-            motionFlag = false;
+        if (pirRead()) {
             printf("PIR: motion\n");   
             handle(Event::motion);
         }
-
+        
+        if (ctrl.getCurrentState() == State::armed && pirHigh()) {
+            handle(Event::motion);
+        }
+        
         handle(Event::tick); // CLAUDE: lets the controller check timeouts (once those are written)
     }
 }
