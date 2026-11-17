@@ -4,6 +4,7 @@
 #include "core/controller.h"
 #include "drivers/buzzer.h"
 #include "drivers/pir.h"
+#include "drivers/button.h"
 
 // ----- The current pins we have to move to config.h later for clean code
 constexpr uint BUZZER_PIN = 14; // GP14 = physical pin 19
