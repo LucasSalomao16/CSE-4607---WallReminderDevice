@@ -17,8 +17,6 @@ Output Controller::eventOccur(Event event, unsigned int time) {
             break;
 
         case State::alerting:
-            // So this is only temporary and not fully done. Rn, Done just clears the alert so we can test repeatedly.
-            // We have to update it so that it would go to the next due reminder (armed) or idle if the queue is empty.
             if (event == Event::done) {
                 currentState = State::idle;
             }
@@ -29,13 +27,15 @@ Output Controller::eventOccur(Event event, unsigned int time) {
             else if (event == Event::tick && time - alarmStart >= ALARM_TIMEOUT_MS) {
                 currentState = State::armed;
             }
-            // TODO: snooze
             break;
 
         case State::snoozed:
             if(event == Event::tick && time - snoozeStart >= SNOOZE_MS) {
                 currentState = State::alerting;
                 alarmStart = time;
+            }
+            if(event == Event::done) {
+                currentState = State::idle;
             }
             break;
     }

@@ -8,8 +8,8 @@
 
 // ----- The current pins we have to move to config.h later for clean code
 constexpr uint BUZZER_PIN = 14; // GP14 = physical pin 19
-constexpr uint SNOOZE_PIN = 16; // GP?? = physical pin _
-constexpr uint DONE_PIN = 17; // GP?? = physical pin _ 
+constexpr uint SNOOZE_PIN = 17; // GP17 = physical pin 22
+constexpr uint DONE_PIN = 16; // GP16 = physical pin 21
 constexpr uint BUZZER_FREQ_HZ = 2700; // most piezos are loudest around 2-4 kHz
 constexpr uint PIR_PIN = 15;   // GP15 = physical pin 20
 
@@ -46,6 +46,12 @@ void applyOutputs(const Output& out) {
 void handle(Event e) {
     State before = ctrl.getCurrentState();
     Output out = ctrl.eventOccur(e, nowMs());
+    bool canDone = false;
+    
+    //pressing done in idle/armed state does nothing, but in alerting/snoozed works
+    if (e == Event::done && before == State::alerting || before == State::snoozed) {
+        canDone = true;
+    }
 
     // Only touch hardware / print when the state actually changes.
     if (ctrl.getCurrentState() != before) {
@@ -71,6 +77,9 @@ int main() {
     //pins
     pirInit(PIR_PIN);
     buzzerInit(BUZZER_PIN, BUZZER_FREQ_HZ);
+    buzzerSet(true);
+sleep_ms(1000);
+buzzerSet(false);
     buttonInit(SNOOZE_PIN); // initialize the snooze button
     buttonInit(DONE_PIN); // initialize the done button  
     
@@ -82,6 +91,11 @@ int main() {
         // this is just because we dont have any reminder system yet, so its for simulation
         int c = getchar_timeout_us(0);
         if (c == 'r') handle(Event::reminderDue);
+        if (c == 'd') handle(Event::done);
+        //temporary print to see if the buttons are working
+        if (buttonPressed(SNOOZE_PIN)) { printf("BTN: snooze\n"); handle(Event::snooze); }
+        if (buttonPressed(DONE_PIN))   { printf("BTN: done\n");   handle(Event::done); }
+        
         else if (buttonPressed(DONE_PIN)) handle(Event::done);
         else if (buttonPressed(SNOOZE_PIN)) handle(Event::snooze);
         
