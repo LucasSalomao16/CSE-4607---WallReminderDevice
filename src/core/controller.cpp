@@ -35,7 +35,7 @@ Output Controller::eventOccur(Event event, unsigned int time) {
         case State::snoozed:
             if(event == Event::tick && time - snoozeStart >= SNOOZE_MS) {
                 currentState = State::alerting;
-                alarmState = time;
+                alarmStart = time;
             }
             break;
     }

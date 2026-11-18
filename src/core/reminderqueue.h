@@ -4,7 +4,7 @@
 class ReminderQueue {
 public: 
     static constexpr int MAX = 16;
-    uint32_t add(Reminder r);
+    uint32_t add(const Reminder& r);
     const Reminder* peekDue(uint32_t nowSec) const;
     void completeFront(uint32_t nowSec);
     bool remove(uint32_t id);
