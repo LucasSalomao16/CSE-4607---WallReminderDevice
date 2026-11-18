@@ -36,7 +36,7 @@ const char* stateName(State s) {
 // applies the outputs to the hardware (LED, buzzer, etc.) For now this only turns the onboard LED on/off, but later it will also control the buzzer and the LED matrix.
 void applyOutputs(const Output& out) {
     cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, out.alarmOn);
-    gpio_put(BUZZER_PIN, !out.alarmOn); //turns on buzzer when alarm is on
+    buzzerSet(out.alarmOn); //turns on buzzer when alarm is on
     
     // TODO: LED matrix (text / image)
 }
@@ -46,12 +46,6 @@ void applyOutputs(const Output& out) {
 void handle(Event e) {
     State before = ctrl.getCurrentState();
     Output out = ctrl.eventOccur(e, nowMs());
-    bool canDone = false;
-    
-    //pressing done in idle/armed state does nothing, but in alerting/snoozed works
-    if (e == Event::done && before == State::alerting || before == State::snoozed) {
-        canDone = true;
-    }
 
     // Only touch hardware / print when the state actually changes.
     if (ctrl.getCurrentState() != before) {
@@ -59,7 +53,6 @@ void handle(Event e) {
         printf("%s -> %s  [alarm=%d text=%d img=%d]\n",
                stateName(before), stateName(ctrl.getCurrentState()),
                out.alarmOn, out.displayTxt, out.displayImg);
-               buzzerSet(out.alarmOn); //turns on buzzer when alarm is on
     }
 }
 
@@ -77,9 +70,6 @@ int main() {
     //pins
     pirInit(PIR_PIN);
     buzzerInit(BUZZER_PIN, BUZZER_FREQ_HZ);
-    buzzerSet(true);
-sleep_ms(1000);
-buzzerSet(false);
     buttonInit(SNOOZE_PIN); // initialize the snooze button
     buttonInit(DONE_PIN); // initialize the done button  
     
@@ -92,13 +82,10 @@ buzzerSet(false);
         int c = getchar_timeout_us(0);
         if (c == 'r') handle(Event::reminderDue);
         if (c == 'd') handle(Event::done);
+        if (c == 's') handle(Event::snooze);
         //temporary print to see if the buttons are working
         if (buttonPressed(SNOOZE_PIN)) { printf("BTN: snooze\n"); handle(Event::snooze); }
         if (buttonPressed(DONE_PIN))   { printf("BTN: done\n");   handle(Event::done); }
-        
-        else if (buttonPressed(DONE_PIN)) handle(Event::done);
-        else if (buttonPressed(SNOOZE_PIN)) handle(Event::snooze);
-        
 
         // Real input from the PIR
         if (pirRead()) {

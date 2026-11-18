@@ -34,7 +34,7 @@ Output Controller::eventOccur(Event event, unsigned int time) {
                 currentState = State::alerting;
                 alarmStart = time;
             }
-            if(event == Event::done) {
+            else if(event == Event::done) {
                 currentState = State::idle;
             }
             break;
