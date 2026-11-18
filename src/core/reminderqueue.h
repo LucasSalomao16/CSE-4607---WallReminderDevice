@@ -3,13 +3,12 @@
 
 class ReminderQueue {
 public: 
-    static constexpr int MAX = 16;
+    static constexpr int MAX = 16; // maximum number of reminders in the queue 
     uint32_t add(const Reminder& r);
     const Reminder* peekDue(uint32_t nowSec) const;
     void completeFront(uint32_t nowSec);
-    bool remove(uint32_t id);
-    int size() const { return count; }
-    const Reminder& at(int i) const { return items[i]; }
+    int size() const;
+    const Reminder& at(int i) const;
 private:
     Reminder items[MAX];
     int count = 0;

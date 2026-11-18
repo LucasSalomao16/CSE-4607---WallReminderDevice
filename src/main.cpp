@@ -1,4 +1,5 @@
 #include <cstdio>
+#include <cstring>
 #include "pico/stdlib.h"
 #include "pico/cyw43_arch.h"
 #include "core/controller.h"
@@ -80,7 +81,14 @@ int main() {
         // Fake inputs from the serial monitor (non-blocking read)
         // this is just because we dont have any reminder system yet, so its for simulation
         int c = getchar_timeout_us(0);
-        if (c == 'r') handle(Event::reminderDue);
+        if (c == 'r') { // when r is pressed a reminder is added to the queue
+         Reminder r; 
+         strcpy(r.text, "Take out trash");
+         r.dueSec = nowMs()/1000; // due immediately 
+         ctrl.queue.add(r); 
+         printf("Added reminder, queue size = %d\n", ctrl.queue.size());
+
+        }
         if (c == 'd') handle(Event::done);
         if (c == 's') handle(Event::snooze);
         //temporary print to see if the buttons are working
