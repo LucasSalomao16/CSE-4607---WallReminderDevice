@@ -6,6 +6,10 @@
 #include "drivers/buzzer.h"
 #include "drivers/pir.h"
 #include "drivers/button.h"
+#include <iostream>
+#include <cstdlib>
+#include "drivers/wifi.h"
+#include "wifi_secrets.h"
 
 // ----- The current pins we have to move to config.h later for clean code
 constexpr uint BUZZER_PIN = 14; // GP14 = physical pin 19
@@ -60,6 +64,25 @@ void handle(Event e) {
 
 // --------- helper functions ABOVE
 
+// Blocking line read from USB serial.
+// Ends at Enter (\r or \n) OR when no new character arrives for 200 ms,
+// so it works whether or not the serial monitor sends a line ending.
+void readLine(char* buf, int size) {
+    int n = 0;
+    while (true) {
+        // wait forever for the first character, then at most 200 ms for each next one
+        int ch = (n == 0) ? getchar() : getchar_timeout_us(200000);
+
+        if (ch == PICO_ERROR_TIMEOUT) break;          // message finished arriving
+        if (ch == '\r' || ch == '\n') {
+            if (n == 0) continue;                     // leftover newline: keep waiting
+            break;
+        }
+        if (n < size - 1) buf[n++] = (char)ch;
+    }
+    buf[n] = '\0';
+}
+
 
 int main() {
     stdio_init_all();
@@ -75,20 +98,30 @@ int main() {
     buttonInit(DONE_PIN); // initialize the done button  
     
     sleep_ms(2000);
+    connectWiFi(WIFI_SSID, WIFI_PASSWORD);
     applyOutputs(ctrl.eventOccur(Event::tick, nowMs())); //starts fsm
 
     while (true) {
         // Fake inputs from the serial monitor (non-blocking read)
         // this is just because we dont have any reminder system yet, so its for simulation
         int c = getchar_timeout_us(0);
-        if (c == 'r') { // when r is pressed a reminder is added to the queue
-         Reminder r; 
-         strcpy(r.text, "Take out trash");
-         r.dueSec = nowMs()/1000; // due immediately 
-         ctrl.queue.add(r); 
-         printf("Added reminder, queue size = %d\n", ctrl.queue.size());
+        if (c == 'r') {
+            Reminder r{};                         // zero all fields (repeatSec = 0)
+            char line[16];
 
+            printf("Reminder text: ");
+            readLine(r.text, sizeof(r.text));
+            printf("%s\nDue in how many seconds? ", r.text);
+            readLine(line, sizeof(line));
+
+            r.dueSec = nowMs() / 1000 + (uint32_t)atoi(line);   // absolute time
+            uint32_t id = ctrl.queue.add(r);
+            if (id == 0) printf("\nQueue full!\n");
+            else printf("%s\nAdded #%lu, due at t=%lus, queue size = %d\n",
+                        line, (unsigned long)id, (unsigned long)r.dueSec,
+                        ctrl.queue.size());
         }
+
         if (c == 'd') handle(Event::done);
         if (c == 's') handle(Event::snooze);
         //temporary print to see if the buttons are working
@@ -96,7 +129,7 @@ int main() {
         if (buttonPressed(DONE_PIN))   { printf("BTN: done\n");   handle(Event::done); }
 
         // Real input from the PIR
-        if (pirRead()) {
+        if (pirRead() && ctrl.getCurrentState() == State::armed) {
             printf("PIR: motion\n");   
             handle(Event::motion);
         }

@@ -1,4 +1,5 @@
 #include "controller.h"
+#include <cstdio>
 
 Output Controller::eventOccur(Event event, unsigned int time) {
     // FSM that update the state based on the event.
@@ -16,6 +17,12 @@ Output Controller::eventOccur(Event event, unsigned int time) {
             if (event == Event::motion) {
                 currentState = State::alerting;
                 alarmStart = time;
+                const Reminder* r = queue.peekDue(nowSec);
+                if (r) printf("ALERTING: #%lu \"%s\"\n", (unsigned long)r->id, r->text);
+            }
+            // if someone deletes a reminder through the phone, it still has to check if there are any reminders left in the queue
+            else if (!queue.peekDue(nowSec)) {
+                currentState = State::idle;
             }
             break;
 
@@ -39,15 +46,13 @@ Output Controller::eventOccur(Event event, unsigned int time) {
                 // if a reminder is finished during snooze, remove it from the queue and check to see if 
                 // there's another reminder due now 
                 finishReminder();
+                
             }
             else if(event == Event::tick && time - snoozeStart >= SNOOZE_MS) {
                 currentState = State::alerting;
                 alarmStart = time;
             }
 
-            else if(event == Event::done) {
-                currentState = State::idle;
-            }
             break;
     }
 
@@ -63,12 +68,17 @@ Output Controller::eventOccur(Event event, unsigned int time) {
 }
 
 void Controller::finishReminder() {
-    // remove reminder from the queue
+    if (queue.size() > 0) {
+        const Reminder& r = queue.at(0);
+        printf("Reminder #%lu \"%s\" done\n", (unsigned long)r.id, r.text);
+    }
+
     queue.completeFront(nowSec);
+    printf("Queue size now = %d\n", queue.size());
 
     // check to see if another reminder is due now amd move
     // to armed or idle 
-    if(queue.peekDue(nowSec)) {
+    if(queue.peekDue(nowSec)) { 
         currentState = State::armed;
     }
     else {

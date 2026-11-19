@@ -1,6 +1,6 @@
 #pragma once
 #include "events.h"
-#include "reminder_queue.h"
+#include "reminderqueue.h"
 
 //states
 enum class State{
@@ -23,7 +23,7 @@ private:
         State currentState = State::idle;
         unsigned int alarmStart = 0;
         unsigned int snoozeStart = 0;
-        unsigned int SNOOZE_MS = 10UL * 60 * 1000;
+        unsigned int SNOOZE_MS = 10UL * 1000;
         unsigned int ALARM_TIMEOUT_MS = 60UL * 1000;
         uint32_t nowSec = 0; // for testing
         void finishReminder();

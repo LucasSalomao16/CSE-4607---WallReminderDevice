@@ -43,6 +43,7 @@ add_executable(wallreminder
         src/drivers/pir.cpp
         src/drivers/button.cpp
         src/core/reminderqueue.cpp
+        src/drivers/wifi.cpp
 )
 
 pico_set_program_name(wallreminder "wallreminder")
@@ -55,7 +56,7 @@ pico_enable_stdio_usb(wallreminder 1)
 # Libraries: standard SDK + Wi-Fi chip driver (needed for the onboard LED)
 target_link_libraries(wallreminder
         pico_stdlib
-        pico_cyw43_arch_none
+        pico_cyw43_arch_lwip_poll 
         hardware_pwm
 )
 
