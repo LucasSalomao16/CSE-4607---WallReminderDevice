@@ -121,7 +121,7 @@ static const uint8_t font5x7[] = {
     0x3C, 0x00, 0x00, 0x00, 0x00, 0x00 // #255 NBSP
 };
 
-
+// returns a bitmask representing which pixels should be on for each column of char c 
 const uint8_t* charColumns(char c) {
     unsigned char code = static_cast<unsigned char>(c);
 
